@@ -31,3 +31,4 @@ Thumbs.db
 *.pyc
 *.egg-info/
 .vercel
+.env*.local

@@ -407,16 +407,17 @@ EURO_CITIES: dict[str, tuple[float, float]] = {
 }
 
 MODELS = ["ecmwf_ifs", "gfs_seamless", "icon_seamless"]
-THRESHOLDS_F = [32, 50, 60, 70, 80, 90, 100]
+THRESHOLDS_C = [0, 10, 15, 20, 25, 30, 35]
 
 
 @router.post("/sync-weather")
 async def sync_weather(x_webhook_secret: str | None = Header(None)):
     """Fetch ensemble weather forecasts for European capitals and store in Supabase.
 
-    Triggered by n8n every 6 hours (after model runs at 00Z, 06Z, 12Z, 18Z).
-    Fetches ECMWF, GFS, and ICON ensemble data for 12 cities, computes daily
-    max temperatures per member, and stores with pre-computed threshold probabilities.
+    Triggered by n8n every hour.
+    Fetches ECMWF, GFS, and ICON ensemble data for 12 cities in Celsius,
+    computes daily max temperatures per member, and stores with pre-computed
+    threshold probabilities.
     """
     _verify_secret(x_webhook_secret)
 
@@ -452,9 +453,9 @@ async def sync_weather(x_webhook_secret: str | None = Header(None)):
 
                     # Pre-compute probabilities for common thresholds
                     prob_above = {}
-                    for thresh_f in THRESHOLDS_F:
-                        count = sum(1 for v in member_values if v >= thresh_f)
-                        prob_above[str(thresh_f)] = round(count / len(member_values), 4)
+                    for thresh_c in THRESHOLDS_C:
+                        count = sum(1 for v in member_values if v >= thresh_c)
+                        prob_above[str(thresh_c)] = round(count / len(member_values), 4)
 
                     record = {
                         "city": city_name,

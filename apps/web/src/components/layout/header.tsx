@@ -8,12 +8,14 @@ const pageTitles: Record<string, string> = {
   '/signals': 'Signals',
   '/portfolio': 'Portfolio',
   '/markets': 'Markets',
+  '/weather': 'Weather Forecasts',
   '/settings': 'Settings',
 }
 
 export function Header() {
   const pathname = usePathname()
-  const title = pageTitles[pathname] || 'PolyTrader'
+  const title = pageTitles[pathname]
+    || (pathname.startsWith('/weather/') ? 'Weather Forecasts' : 'PolyTrader')
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-[#2e3240] bg-[#1a1d27] px-6">
