@@ -1,13 +1,16 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 
+import numpy as np
 from fastapi import APIRouter, HTTPException, Header
 
 from src.db.client import get_supabase
 from src.trading.strategies.registry import get_all_strategies
 from src.data.market.clob import get_prices
 from src.data.market.gamma import get_market_detail
+from src.data.weather.open_meteo import fetch_ensemble
+from src.data.weather.probability import threshold_probability, celsius_to_fahrenheit
 from src.trading.execution.paper import PaperTrader
 
 router = APIRouter()
@@ -385,3 +388,99 @@ async def daily_snapshot(x_webhook_secret: str | None = Header(None)):
         pass  # snapshot already exists for today or table issue
 
     return snapshot
+
+
+# European capital cities for weather data collection
+EURO_CITIES: dict[str, tuple[float, float]] = {
+    "amsterdam": (52.37, 4.90),
+    "berlin": (52.52, 13.41),
+    "brussels": (50.85, 4.35),
+    "london": (51.51, -0.13),
+    "paris": (48.86, 2.35),
+    "vienna": (48.21, 16.37),
+    "zurich": (47.38, 8.54),
+    "rome": (41.90, 12.50),
+    "madrid": (40.42, -3.70),
+    "lisbon": (38.72, -9.14),
+    "prague": (50.08, 14.44),
+    "warsaw": (52.23, 21.01),
+}
+
+MODELS = ["ecmwf_ifs", "gfs_seamless", "icon_seamless"]
+THRESHOLDS_F = [32, 50, 60, 70, 80, 90, 100]
+
+
+@router.post("/sync-weather")
+async def sync_weather(x_webhook_secret: str | None = Header(None)):
+    """Fetch ensemble weather forecasts for European capitals and store in Supabase.
+
+    Triggered by n8n every 6 hours (after model runs at 00Z, 06Z, 12Z, 18Z).
+    Fetches ECMWF, GFS, and ICON ensemble data for 12 cities, computes daily
+    max temperatures per member, and stores with pre-computed threshold probabilities.
+    """
+    _verify_secret(x_webhook_secret)
+
+    db = get_supabase()
+    now = datetime.now(timezone.utc)
+    records_inserted = 0
+    errors = []
+
+    for city_name, (lat, lon) in EURO_CITIES.items():
+        for model in MODELS:
+            try:
+                data = await fetch_ensemble(
+                    lat=lat, lon=lon, model=model,
+                    variables=["temperature_2m"], days=10,
+                )
+                times = data.get("time", [])
+                ensemble = data.get("temperature_2m")
+                if ensemble is None or len(times) == 0:
+                    continue
+
+                # Group hourly data by date, compute daily max per member
+                date_indices: dict[str, list[int]] = {}
+                for i, t in enumerate(times):
+                    d = t[:10]  # "YYYY-MM-DD"
+                    if d not in date_indices:
+                        date_indices[d] = []
+                    date_indices[d].append(i)
+
+                for forecast_date_str, indices in date_indices.items():
+                    day_data = ensemble[indices, :]  # (hours_in_day, members)
+                    daily_max_per_member = np.max(day_data, axis=0)  # (members,)
+                    member_values = [round(float(v), 2) for v in daily_max_per_member]
+
+                    # Pre-compute probabilities for common thresholds
+                    prob_above = {}
+                    for thresh_f in THRESHOLDS_F:
+                        count = sum(1 for v in member_values if v >= thresh_f)
+                        prob_above[str(thresh_f)] = round(count / len(member_values), 4)
+
+                    record = {
+                        "city": city_name,
+                        "lat": lat,
+                        "lon": lon,
+                        "model": model,
+                        "variable": "temperature_2m",
+                        "forecast_date": forecast_date_str,
+                        "member_values": member_values,
+                        "probability_above": prob_above,
+                        "fetched_at": now.isoformat(),
+                    }
+                    db.table("weather_forecasts").insert(record).execute()
+                    records_inserted += 1
+
+            except Exception as e:
+                errors.append({
+                    "city": city_name,
+                    "model": model,
+                    "error": str(e),
+                })
+
+    return {
+        "cities": len(EURO_CITIES),
+        "models": len(MODELS),
+        "records_inserted": records_inserted,
+        "errors": errors,
+        "fetched_at": now.isoformat(),
+    }

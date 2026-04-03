@@ -32,6 +32,19 @@ KNOWN_CITIES: dict[str, tuple[float, float]] = {
     "dc": (38.91, -77.04),
     "philadelphia": (39.95, -75.17),
     "minneapolis": (44.98, -93.27),
+    # European capitals
+    "amsterdam": (52.37, 4.90),
+    "berlin": (52.52, 13.41),
+    "brussels": (50.85, 4.35),
+    "london": (51.51, -0.13),
+    "paris": (48.86, 2.35),
+    "vienna": (48.21, 16.37),
+    "zurich": (47.38, 8.54),
+    "rome": (41.90, 12.50),
+    "madrid": (40.42, -3.70),
+    "lisbon": (38.72, -9.14),
+    "prague": (50.08, 14.44),
+    "warsaw": (52.23, 21.01),
 }
 
 # Regex patterns for parsing temperature market questions
