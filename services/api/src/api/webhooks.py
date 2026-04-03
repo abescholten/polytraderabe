@@ -42,31 +42,86 @@ async def scan_signals(x_webhook_secret: str | None = Header(None)):
             markets = await strategy.find_markets()
             for market in markets:
                 try:
+                    # Upsert market into Supabase so sync-prices and dashboard work
+                    condition_id = market.get("condition_id", "")
+                    if condition_id:
+                        tokens = market.get("tokens", [])
+                        yes_token = ""
+                        no_token = ""
+                        for t in tokens:
+                            if t.get("outcome", "").upper() == "YES":
+                                yes_token = t.get("token_id", "")
+                            elif t.get("outcome", "").upper() == "NO":
+                                no_token = t.get("token_id", "")
+                        if not yes_token:
+                            clob_ids = market.get("clobTokenIds", [])
+                            if len(clob_ids) >= 2:
+                                yes_token = clob_ids[0]
+                                no_token = clob_ids[1]
+                            elif len(clob_ids) == 1:
+                                yes_token = clob_ids[0]
+
+                        market_record = {
+                            "condition_id": condition_id,
+                            "question": market.get("question", ""),
+                            "slug": market.get("slug", ""),
+                            "category": "weather",
+                            "yes_token_id": yes_token or "unknown",
+                            "no_token_id": no_token or "unknown",
+                            "end_date": market.get("end_date_iso"),
+                            "active": market.get("active", True),
+                            "closed": market.get("closed", False),
+                            "volume": market.get("volume"),
+                            "volume_24h": market.get("volume_24hr"),
+                            "liquidity": market.get("liquidity"),
+                            "best_bid": market.get("best_bid"),
+                            "best_ask": market.get("best_ask"),
+                            "synced_at": datetime.now(timezone.utc).isoformat(),
+                        }
+                        db.table("markets").upsert(
+                            market_record, on_conflict="condition_id"
+                        ).execute()
+
                     signal = await strategy.generate_signal(market)
                     if signal is None:
                         continue
 
+                    # Resolve market UUID from condition_id
+                    market_uuid = None
+                    if condition_id:
+                        market_row = (
+                            db.table("markets")
+                            .select("id")
+                            .eq("condition_id", condition_id)
+                            .limit(1)
+                            .execute()
+                        )
+                        if market_row.data:
+                            market_uuid = market_row.data[0]["id"]
+
                     # Check for duplicate: same strategy + market + pending
-                    existing = (
+                    dup_query = (
                         db.table("signals")
                         .select("id")
-                        .eq("strategy", signal["strategy"])
-                        .eq("market_id", signal["market_id"])
+                        .eq("strategy_name", signal["strategy"])
                         .eq("status", "pending")
-                        .execute()
                     )
+                    if market_uuid:
+                        dup_query = dup_query.eq("market_id", market_uuid)
+                    existing = dup_query.execute()
                     if existing.data:
                         continue  # skip duplicate
 
                     # Insert signal
                     signal_record = {
                         "id": str(uuid.uuid4()),
-                        "strategy": signal["strategy"],
-                        "market_id": signal["market_id"],
+                        "strategy_name": signal["strategy"],
+                        "market_id": market_uuid,
                         "our_probability": signal["our_probability"],
                         "market_price": signal["market_price"],
                         "edge": signal["edge"],
                         "confidence": signal["confidence"],
+                        "recommended_side": "YES" if signal["edge"] > 0 else "NO",
                         "reasoning": signal["reasoning"],
                         "model_breakdown": signal.get("model_breakdown"),
                         "status": "pending",
