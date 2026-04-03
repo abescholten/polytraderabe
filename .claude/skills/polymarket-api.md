@@ -89,44 +89,24 @@ Key response fields:
 
 ### Finding Weather Markets
 
+Weather market discovery uses three strategies (see `src/data/market/discovery.py`):
+1. **Tag search** — `tag_id=100381` (official weather category)
+2. **Keyword search** — temperature, weather, rain, snow, heat, cold, hurricane, storm
+3. **European city name search** — 20 EU capitals, filtered to weather-related questions only
+
+Markets are classified with city/region using `classify_market_city()` for filtering.
+
+### Fetching Full Orderbook
+
 ```python
-import httpx
+# GET /book?token_id={id} — returns full depth
+from src.data.market.clob import get_orderbook, get_orderbooks_batch
 
-async def find_weather_markets():
-    """Find active weather-related markets on Polymarket."""
-    async with httpx.AsyncClient() as client:
-        # Search by tag
-        resp = await client.get(
-            "https://gamma-api.polymarket.com/markets",
-            params={
-                "active": "true",
-                "closed": "false",
-                "tag_id": "100381",  # weather tag — verify this is current
-                "limit": 50,
-                "order": "volume24hr",
-                "ascending": "false"
-            }
-        )
-        markets = resp.json()
+book = await get_orderbook(token_id)
+# Returns: {"bids": [{"price": "0.65", "size": "100"}, ...], "asks": [...]}
 
-        # Also search by keyword as backup
-        resp2 = await client.get(
-            "https://gamma-api.polymarket.com/markets",
-            params={
-                "active": "true",
-                "closed": "false",
-                "limit": 50,
-                "order": "volume24hr",
-            }
-        )
-        all_markets = resp2.json()
-        weather_keywords = ["temperature", "weather", "rain", "snow", "heat", "cold", "hurricane", "storm"]
-        keyword_matches = [
-            m for m in all_markets
-            if any(kw in m.get("question", "").lower() for kw in weather_keywords)
-        ]
-
-        return markets + keyword_matches
+# Batch fetch (concurrent via asyncio.gather)
+books = await get_orderbooks_batch([token1, token2, token3])
 ```
 
 ## Authentication

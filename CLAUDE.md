@@ -67,6 +67,9 @@ polymarket-trader/
 │       │   ├── data/
 │       │   │   ├── weather/           # Open-Meteo integration
 │       │   │   ├── market/            # Polymarket API integration
+│       │   │   │   ├── clob.py        # CLOB prices + orderbook
+│       │   │   │   ├── gamma.py       # Market discovery (tag/keyword)
+│       │   │   │   └── discovery.py   # EU/US city search + classifier
 │       │   │   └── pipeline/          # Data sync + caching
 │       │   └── models/                # Pydantic models + types
 │       ├── tests/
@@ -143,6 +146,29 @@ DRAWDOWN_CIRCUIT_BREAKER=0.15   # 15% drawdown halts all trading
 5. **All strategies must implement `dry_run` mode** that logs but doesn't execute
 6. **Rate limit backoff is mandatory** — respect Polymarket's 9000/10s CLOB limit
 7. **Never auto-approve trades without human review** in semi-automated mode
+
+## Orderbook Tracking Pipeline
+
+The platform continuously tracks full orderbook depth for weather markets (EU + US):
+
+### Webhook Endpoints (triggered by n8n)
+- `POST /webhook/discover-weather-markets` — discovers weather markets across 20 EU capitals + 16 US cities (every 30 min)
+- `POST /webhook/snapshot-orderbooks` — fetches full orderbook for all active weather markets (every 1 min)
+
+### Query Endpoints
+- `GET /markets/weather?region=europe&city=amsterdam` — list weather markets by region/city
+- `GET /markets/{id}/orderbook` — latest orderbook snapshot (YES + NO)
+- `GET /markets/{id}/orderbook/history?hours=24&side=YES&interval_minutes=5` — time-series with downsampling
+
+### Supabase Tables
+- `orderbook_snapshots` — full bid/ask depth as JSONB + pre-computed summary (best_bid, best_ask, mid_price, spread, depth)
+- `markets.city` / `markets.region` — classified city and region for filtering
+
+### European Capitals Tracked
+Amsterdam, London, Paris, Berlin, Madrid, Rome, Lisbon, Brussels, Vienna, Zurich, Stockholm, Copenhagen, Oslo, Helsinki, Warsaw, Prague, Budapest, Athens, Dublin, Bucharest
+
+### Data Volume
+~30-90K rows/day at 1-min intervals. Plan retention policy: 5-min samples after 7 days, hourly after 30 days.
 
 ## Key URLs
 

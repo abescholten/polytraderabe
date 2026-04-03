@@ -29,19 +29,19 @@ the real-time dashboard via Supabase Realtime.
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
 │   markets    │────▶│   signals    │────▶│   trades    │
 │ (from Gamma) │     │ (algo output)│     │ (executed)  │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │                    │                    │
-       ▼                    ▼                    ▼
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│ price_history│     │  forecasts   │     │  positions  │
-│ (time series)│     │ (for Brier)  │     │ (open/closed│
-└─────────────┘     └──────────────┘     └─────────────┘
-                                               │
-                                               ▼
-                                         ┌─────────────┐
-                                         │ pnl_snapshots│
-                                         │ (daily P&L)  │
-                                         └─────────────┘
+│ +city,region │     └──────────────┘     └─────────────┘
+└─────────────┘            │                    │
+  │         │              ▼                    ▼
+  ▼         ▼        ┌──────────────┐     ┌─────────────┐
+┌──────────┐ ┌────────────────┐     │  forecasts   │     │  positions  │
+│price_hist│ │orderbook_snaps │     │ (for Brier)  │     │ (open/closed│
+│(top book)│ │(full depth JSONB)│   └──────────────┘     └─────────────┘
+└──────────┘ └────────────────┘                                │
+                                                               ▼
+                                                         ┌─────────────┐
+                                                         │ pnl_snapshots│
+                                                         │ (daily P&L)  │
+                                                         └─────────────┘
 ```
 
 ## Migration: Core Tables
@@ -98,6 +98,33 @@ CREATE TABLE public.price_history (
 );
 
 CREATE INDEX idx_price_history_market_time ON public.price_history(market_id, recorded_at DESC);
+
+-- ============================================
+-- ORDERBOOK_SNAPSHOTS — full orderbook depth
+-- Added in migration 006
+-- ============================================
+CREATE TABLE public.orderbook_snapshots (
+    id BIGSERIAL PRIMARY KEY,
+    market_id UUID REFERENCES public.markets(id) ON DELETE CASCADE,
+    token_id TEXT NOT NULL,                      -- CLOB token ID
+    side TEXT NOT NULL CHECK (side IN ('YES', 'NO')),
+    bids JSONB NOT NULL DEFAULT '[]',            -- [{price, size}, ...]
+    asks JSONB NOT NULL DEFAULT '[]',            -- [{price, size}, ...]
+    best_bid NUMERIC,
+    best_ask NUMERIC,
+    mid_price NUMERIC,
+    spread NUMERIC,
+    bid_depth NUMERIC DEFAULT 0,                 -- Total bid liquidity
+    ask_depth NUMERIC DEFAULT 0,                 -- Total ask liquidity
+    num_bid_levels INTEGER DEFAULT 0,
+    num_ask_levels INTEGER DEFAULT 0,
+    recorded_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_ob_market_recorded ON public.orderbook_snapshots(market_id, recorded_at DESC);
+CREATE INDEX idx_ob_recorded_at ON public.orderbook_snapshots(recorded_at);
+
+-- Note: markets table also has city TEXT and region TEXT columns (migration 006)
 
 -- ============================================
 -- STRATEGIES — registered trading algorithms

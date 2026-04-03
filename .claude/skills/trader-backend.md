@@ -46,8 +46,9 @@ services/api/
 │   │   │   ├── open_meteo.py    # Open-Meteo API client
 │   │   │   └── probability.py   # Ensemble → probability
 │   │   ├── market/
-│   │   │   ├── gamma.py         # Gamma API client
-│   │   │   ├── clob.py          # CLOB API client
+│   │   │   ├── gamma.py         # Gamma API client (tag/keyword search)
+│   │   │   ├── clob.py          # CLOB API client (prices + orderbook)
+│   │   │   ├── discovery.py     # EU/US city search + classifier
 │   │   │   └── websocket.py     # WebSocket client (Railway only)
 │   │   └── pipeline/
 │   │       ├── sync.py          # Scheduled data sync
