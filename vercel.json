@@ -8,16 +8,5 @@
       "source": "/api/(.*)",
       "destination": "/api/main.py"
     }
-  ],
-  "experimentalServices": {
-    "web": {
-      "entrypoint": "apps/web",
-      "routePrefix": "/",
-      "framework": "nextjs"
-    },
-    "api": {
-      "entrypoint": "services/api",
-      "routePrefix": "/_/api"
-    }
-  }
+  ]
 }
