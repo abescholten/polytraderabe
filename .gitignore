@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+.next/
+.vercel/
+.turbo/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets — NEVER commit
+*.key
+*.pem
+wallet.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+*.pyc
+*.egg-info/
