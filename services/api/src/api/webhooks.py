@@ -449,8 +449,13 @@ async def sync_weather(x_webhook_secret: str | None = Header(None)):
 
                 for forecast_date_str, indices in date_indices.items():
                     day_data = ensemble[indices, :]  # (hours_in_day, members)
-                    daily_max_per_member = np.max(day_data, axis=0)  # (members,)
-                    member_values = [round(float(v), 2) for v in daily_max_per_member]
+                    daily_max_per_member = np.nanmax(day_data, axis=0)  # (members,)
+                    member_values = [
+                        round(float(v), 2) for v in daily_max_per_member
+                        if not np.isnan(v)
+                    ]
+                    if not member_values:
+                        continue
 
                     # Pre-compute probabilities for common thresholds
                     prob_above = {}

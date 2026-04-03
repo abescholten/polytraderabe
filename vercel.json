@@ -1,11 +1,13 @@
 {
-  "buildCommand": "cd apps/web && pnpm build",
-  "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install",
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/main.py"
+  "experimentalServices": {
+    "web": {
+      "entrypoint": "apps/web",
+      "routePrefix": "/"
+    },
+    "api": {
+      "entrypoint": "services/api/main.py",
+      "routePrefix": "/api"
     }
-  ]
+  }
 }

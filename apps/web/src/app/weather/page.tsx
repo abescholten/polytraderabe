@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { tradingApi } from '@/lib/api/trading-api'
 import { CityCard } from '@/components/weather/city-card'
+import { WeatherLegend } from '@/components/weather/weather-legend'
 import type { CityWeather } from '@/types/weather'
 
 function timeAgo(dateStr: string): string {
@@ -91,6 +92,10 @@ export default function WeatherPage() {
             <CityCard key={city.city} city={city} />
           ))}
         </div>
+      )}
+
+      {!loading && !error && (
+        <WeatherLegend sections={['temperature', 'probability-intro']} />
       )}
     </div>
   )

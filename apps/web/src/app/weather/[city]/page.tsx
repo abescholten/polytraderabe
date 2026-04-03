@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react'
 import { tradingApi } from '@/lib/api/trading-api'
 import { EnsembleChart } from '@/components/weather/ensemble-chart'
 import { ForecastTable } from '@/components/weather/forecast-table'
+import { WeatherLegend } from '@/components/weather/weather-legend'
 import type { CityDetail } from '@/types/weather'
 
 function timeAgo(dateStr: string): string {
@@ -115,6 +116,8 @@ export default function CityWeatherPage() {
             </h3>
             <ForecastTable forecasts={data.forecasts} />
           </div>
+
+          <WeatherLegend sections={['models', 'chart', 'probability-colors']} />
         </div>
       )}
     </div>

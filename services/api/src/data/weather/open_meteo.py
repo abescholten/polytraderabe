@@ -31,19 +31,13 @@ async def fetch_ensemble(
         variables = ["temperature_2m"]
 
     member_count = MODEL_MEMBERS.get(model, 51)
-    # Build ensemble member variable names: e.g. temperature_2m_member01
-    ensemble_vars = []
-    for var in variables:
-        for i in range(member_count):
-            ensemble_vars.append(f"{var}_member{i:02d}")
 
     params = {
         "latitude": lat,
         "longitude": lon,
-        "hourly": ",".join(ensemble_vars),
+        "hourly": ",".join(variables),
         "models": model,
         "forecast_days": days,
-        # Default is Celsius — no temperature_unit param needed
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -57,10 +51,18 @@ async def fetch_ensemble(
     result: dict = {"time": times}
     for var in variables:
         members_data = []
-        for i in range(member_count):
+        # Member 0 is returned as the base variable name (e.g. "temperature_2m")
+        values = hourly.get(var, [])
+        if values:
+            members_data.append(values)
+        # Members 1..N are returned as e.g. "temperature_2m_member01"
+        for i in range(1, member_count):
             key = f"{var}_member{i:02d}"
             values = hourly.get(key, [])
-            members_data.append(values)
+            if values:
+                members_data.append(values)
+        if not members_data:
+            continue
         # Transpose to (time_steps, members)
         arr = np.array(members_data, dtype=float).T
         result[var] = arr

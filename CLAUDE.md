@@ -48,7 +48,12 @@ polymarket-trader/
 │   ├── trader-backend.md              # Python FastAPI backend
 │   ├── trader-data.md                 # Supabase schema + data pipeline
 │   ├── trader-deployment.md           # Vercel/GitHub/Railway deploy
-│   └── backtesting.md                 # Backtesting + calibration
+│   ├── backtesting.md                 # Backtesting + calibration
+│   ├── local-testing.md               # Run full local test suite
+│   ├── pre-deploy-check.md            # Pre-deployment verification gate
+│   ├── pre-commit-verify.md           # Pre-commit quality checks
+│   ├── write-backend-tests.md         # Write pytest tests for Python
+│   └── write-frontend-tests.md        # Write Vitest tests for React/TS
 ├── apps/
 │   └── web/                           # Next.js dashboard app
 │       ├── src/app/                   # App Router pages
@@ -136,6 +141,71 @@ MAX_PORTFOLIO_PCT=0.30          # 30% total exposure
 DAILY_STOP_LOSS_PCT=0.05        # 5% daily stop
 DRAWDOWN_CIRCUIT_BREAKER=0.15   # 15% drawdown halts all trading
 ```
+
+## Development Workflow — Local First
+
+Code MUST be verified locally before it reaches any remote environment. This is enforced
+through skills that trigger automatically. The workflow is: **code → test → commit → test → deploy**.
+
+### Skills for Quality Gates
+
+| Skill | Trigger | What It Does |
+|-------|---------|--------------|
+| `/local-testing` | After code changes, "run tests" | Runs lint + types + tests for affected layer(s) |
+| `/pre-commit-verify` | Before `git commit` | Fast check: lint + types + tests on changed files + secret scan |
+| `/pre-deploy-check` | Before `vercel --prod`, push to main, PR merge | Full gate: all checks + build + env vars + migrations + safety |
+| `/write-backend-tests` | After writing Python code, "add tests" | Writes pytest tests following project patterns |
+| `/write-frontend-tests` | After writing React/TS code, "test component" | Writes Vitest tests (includes framework setup if needed) |
+
+### Mandatory Order
+
+1. **Write code**
+2. **Write tests** — use `/write-backend-tests` or `/write-frontend-tests`
+3. **Run tests locally** — use `/local-testing`
+4. **Commit** — `/pre-commit-verify` runs automatically (lint + types + secret scan)
+5. **Deploy** — `/pre-deploy-check` runs automatically (full build + all checks)
+
+### Before Every Commit
+Run `/pre-commit-verify` or manually:
+```bash
+# Backend (if .py files changed)
+cd services/api && ruff check src/ && mypy src/ --ignore-missing-imports && pytest tests/ -v
+
+# Frontend (if .ts/.tsx files changed)
+cd apps/web && pnpm lint && pnpm typecheck
+```
+
+### Before Every Deploy (push to main, vercel --prod, PR merge)
+Run `/pre-deploy-check` or manually:
+```bash
+# Full backend
+cd services/api && ruff check src/ && mypy src/ --ignore-missing-imports && pytest tests/ -v
+
+# Full frontend including build
+cd apps/web && pnpm lint && pnpm typecheck && pnpm build
+
+# Or via turbo
+pnpm turbo test lint typecheck
+```
+
+### After Any Code Change
+Run `/local-testing` to test just the affected layer(s).
+
+### Test Writing Standards
+- **Every new function needs tests** — use `/write-backend-tests` or `/write-frontend-tests`
+- **Backend tests**: pytest + unittest.mock, live in `services/api/tests/test_<module>.py`
+- **Frontend tests**: Vitest + Testing Library, live next to source as `<file>.test.ts(x)`
+- **Mock external services** (httpx, Supabase), never mock pure functions
+- **Test happy path + edge cases + error cases** for every function
+- **Tests must pass before commit** — no exceptions
+
+### Rules
+1. **Never push untested code** — all checks must pass locally first
+2. **Never skip lint/type checks** — they catch real bugs, not just style
+3. **Fix failures before proceeding** — don't commit with known failures
+4. **Run the narrowest scope first** — test only what changed, then widen if needed
+5. **Build verification before deploy** — `pnpm build` must succeed before any Vercel deploy
+6. **New code needs new tests** — proactively write tests after implementing features
 
 ## Critical Safety Rules
 

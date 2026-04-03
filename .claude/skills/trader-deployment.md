@@ -336,11 +336,25 @@ async def health():
     }
 ```
 
+## Pre-Deployment Verification (MANDATORY)
+
+Before ANY deployment (preview or production), you MUST run the `/pre-deploy-check` skill
+or execute all checks manually. No code leaves the local machine without passing:
+
+1. `ruff check src/` + `mypy src/` + `pytest tests/` (backend)
+2. `pnpm lint` + `pnpm typecheck` + `pnpm build` (frontend)
+3. Clean git status (no uncommitted changes)
+4. No secrets in the diff
+
+**If any check fails, the deploy is BLOCKED.** Fix the issue first.
+
 ## Claude Code Deployment Commands
 
 Commands Claude Code should use for deployment tasks:
 
 ```bash
+# ALWAYS run pre-deploy checks first (see above)
+
 # Deploy to production
 vercel --prod
 
