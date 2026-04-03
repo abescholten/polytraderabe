@@ -2,6 +2,7 @@ import type { Signal } from '@/types/signal'
 import type { Trade, Position } from '@/types/trade'
 import type { Strategy, StrategyPerformance } from '@/types/strategy'
 import type { Market } from '@/types/market'
+import type { CityWeather, CityDetail } from '@/types/weather'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -65,4 +66,10 @@ export const tradingApi = {
     return fetchApi<Market[]>(`/api/markets${params}`)
   },
   getMarket: (id: string) => fetchApi<Market>(`/api/markets/${id}`),
+
+  // Weather
+  getWeatherForecasts: () =>
+    fetchApi<{ cities: CityWeather[]; fetched_at: string | null }>('/weather/forecasts'),
+  getWeatherByCity: (city: string) =>
+    fetchApi<CityDetail>(`/weather/forecasts/${city}`),
 }

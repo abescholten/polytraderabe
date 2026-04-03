@@ -43,7 +43,7 @@ async def fetch_ensemble(
         "hourly": ",".join(ensemble_vars),
         "models": model,
         "forecast_days": days,
-        "temperature_unit": "fahrenheit",
+        # Default is Celsius — no temperature_unit param needed
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:
@@ -112,7 +112,7 @@ async def fetch_historical_actuals(
         "start_date": start_date.isoformat(),
         "end_date": end_date.isoformat(),
         "hourly": ",".join(variables),
-        "temperature_unit": "fahrenheit",
+        # Default is Celsius — no temperature_unit param needed
     }
 
     async with httpx.AsyncClient(timeout=30.0) as client:

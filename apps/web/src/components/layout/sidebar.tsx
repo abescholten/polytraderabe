@@ -8,6 +8,7 @@ import {
   Zap,
   Briefcase,
   BarChart3,
+  CloudSun,
   Settings,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/signals', label: 'Signals', icon: Zap },
   { href: '/portfolio', label: 'Portfolio', icon: Briefcase },
   { href: '/markets', label: 'Markets', icon: BarChart3 },
+  { href: '/weather', label: 'Weather', icon: CloudSun },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
