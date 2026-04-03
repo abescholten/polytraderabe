@@ -11,13 +11,29 @@ The Netherlands is **blocked from Polymarket trading** (KSA enforcement, €420K
 | Layer | Technology | Notes |
 |-------|-----------|-------|
 | Frontend | Next.js 15 + React 19 | App Router, TypeScript strict |
-| Backend | Python 3.12 + FastAPI | Vercel serverless functions |
+| Backend | Python 3.12 + FastAPI | Vercel serverless functions (Mangum) |
 | Database | Supabase (PostgreSQL) | RLS enabled, real-time for dashboard |
-| Trading Engine | Python (separate service) | Railway/Fly.io for persistent WebSocket |
-| Weather Data | Open-Meteo Ensemble API | Free, no API key, 51 ECMWF members |
+| Automation | n8n | 5 scheduled workflows (Poly - prefix) |
+| Weather Data | Open-Meteo Ensemble API | Free, no API key, ECMWF/GFS/ICON |
 | Market Data | Polymarket CLOB + Gamma API | py-clob-client SDK |
 | Deployment | Vercel + GitHub Actions | Auto-deploy on main, preview on PR |
 | Package Manager | pnpm | Workspace monorepo |
+
+## Weather Data Collection
+
+Ensemble forecasts for 12 European capitals (Amsterdam, Berlin, Brussels, London, Paris, Vienna, Zurich, Rome, Madrid, Lisbon, Prague, Warsaw) are fetched every 6 hours from Open-Meteo and stored in the `weather_forecasts` table. Three models per city: ECMWF (51 members), GFS (31), ICON (40).
+
+## Handover Documents
+
+After every work session, a handover document MUST be created in `docs/handovers/` with the filename format `YYYY-MM-DD-<summary>.md`. The document must include:
+- What was built or changed
+- Why (context/motivation)
+- Key decisions made and their rationale
+- Files created or modified
+- Environment variables added
+- External services configured (Supabase migrations, n8n workflows, Vercel settings)
+- Known issues or follow-up items
+- How to verify the changes work
 
 ## Project Structure
 
