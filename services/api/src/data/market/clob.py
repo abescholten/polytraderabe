@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 from typing import Optional
 
@@ -103,3 +105,43 @@ async def get_price_history(
         if isinstance(data, list):
             return data
         return []
+
+
+async def get_orderbook(token_id: str) -> Optional[dict]:
+    """Fetch the full orderbook for a token.
+
+    Returns dict with 'bids' and 'asks' lists, or None on error.
+    Each level: {"price": str, "size": str}
+    """
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.get(
+            f"{CLOB_BASE_URL}/book",
+            params={"token_id": token_id},
+        )
+        if resp.status_code != 200:
+            return None
+        return resp.json()
+
+
+async def get_orderbooks_batch(
+    token_ids: list[str],
+) -> dict[str, Optional[dict]]:
+    """Fetch orderbooks for multiple tokens concurrently.
+
+    Returns dict mapping token_id to orderbook (or None).
+    """
+
+    async def _fetch_one(tid: str) -> tuple[str, Optional[dict]]:
+        result = await get_orderbook(tid)
+        return tid, result
+
+    tasks = [_fetch_one(tid) for tid in token_ids]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    output: dict[str, Optional[dict]] = {}
+    for item in results:
+        if isinstance(item, Exception):
+            continue
+        tid, book = item
+        output[tid] = book
+    return output
