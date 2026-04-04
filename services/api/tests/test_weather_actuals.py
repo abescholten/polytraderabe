@@ -97,3 +97,64 @@ async def test_fetch_daily_max_actuals_skips_nan_hours():
     assert len(result) == 1
     assert result[0]["daily_max"] == 21.0
     assert result[0]["daily_min"] == 10.0
+
+
+from fastapi.testclient import TestClient
+from unittest.mock import patch, MagicMock
+
+
+def test_get_actuals_returns_empty_when_no_data():
+    """GET /weather/actuals/{city} returns empty list when DB has no rows."""
+    from src.api.weather_actuals_api import router
+    from fastapi import FastAPI
+    app = FastAPI()
+    app.include_router(router, prefix="/weather")
+
+    mock_db = MagicMock()
+    (mock_db.table.return_value
+        .select.return_value
+        .eq.return_value
+        .gte.return_value
+        .order.return_value
+        .limit.return_value
+        .execute.return_value.data) = []
+
+    with patch("src.api.weather_actuals_api.get_supabase", return_value=mock_db):
+        client = TestClient(app)
+        resp = client.get("/weather/actuals/amsterdam")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"city": "amsterdam", "actuals": []}
+
+
+def test_get_actuals_returns_rows():
+    """GET /weather/actuals/{city} returns and maps rows from DB correctly."""
+    from src.api.weather_actuals_api import router
+    from fastapi import FastAPI
+    app = FastAPI()
+    app.include_router(router, prefix="/weather")
+
+    mock_rows = [
+        {"date": "2024-01-01", "daily_max_celsius": 8.5, "daily_min_celsius": 2.1, "daily_mean_celsius": 5.0},
+        {"date": "2024-01-02", "daily_max_celsius": 9.1, "daily_min_celsius": 3.0, "daily_mean_celsius": 5.8},
+    ]
+    mock_db = MagicMock()
+    (mock_db.table.return_value
+        .select.return_value
+        .eq.return_value
+        .gte.return_value
+        .order.return_value
+        .limit.return_value
+        .execute.return_value.data) = mock_rows
+
+    with patch("src.api.weather_actuals_api.get_supabase", return_value=mock_db):
+        client = TestClient(app)
+        resp = client.get("/weather/actuals/amsterdam?days=30")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["city"] == "amsterdam"
+    assert len(data["actuals"]) == 2
+    assert data["actuals"][0]["date"] == "2024-01-01"
+    assert data["actuals"][0]["daily_max"] == 8.5
+    assert data["actuals"][1]["daily_min"] == 3.0
