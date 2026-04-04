@@ -32,7 +32,7 @@ function CustomTooltip({
   label,
 }: {
   active?: boolean
-  payload?: Array<{ value: number; dataKey: string }>
+  payload?: Array<{ value: number | [number, number] | null; dataKey: string }>
   label?: string
 }) {
   if (!active || !payload?.length) return null
@@ -77,7 +77,10 @@ export function OddsSparkline({ points, loading }: Props) {
     mid_price: p.mid_price,
     best_bid: p.best_bid,
     best_ask: p.best_ask,
-    spread_band: [p.best_bid, p.best_ask],
+    spread_band:
+      p.best_bid !== null && p.best_ask !== null
+        ? [p.best_bid, p.best_ask]
+        : undefined,
   }))
 
   return (
