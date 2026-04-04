@@ -70,7 +70,13 @@ export default function MarketsPage() {
             </TableHeader>
             <TableBody>
               {markets.map((market) => (
-                <TableRow key={market.id} className="border-[#2e3240]">
+                <TableRow
+                  key={market.id}
+                  className="cursor-pointer border-[#2e3240] hover:bg-[#2e3240]/40"
+                  onClick={() => {
+                    window.location.href = `/markets/${market.id}`
+                  }}
+                >
                   <TableCell className="max-w-[300px] truncate text-[#e8eaed]">
                     {market.question}
                   </TableCell>
