@@ -157,13 +157,64 @@ through skills that trigger automatically. The workflow is: **code → test → 
 | `/write-backend-tests` | After writing Python code, "add tests" | Writes pytest tests following project patterns |
 | `/write-frontend-tests` | After writing React/TS code, "test component" | Writes Vitest tests (includes framework setup if needed) |
 
+### Skills for Trading & Analysis
+
+| Skill | Trigger | What It Does |
+|-------|---------|--------------|
+| `/day-trader` | "evaluate algorithms", "how is strategy performing", "algorithm review" | Reviews algorithm quality, Brier scores, calibration, edge distribution — surfaces improvements |
+| `/backlog-update` | After ANY completed work, "add to backlog", new feature ideas | Adds items to backlog in standard format, de-dupes, sets priority |
+| `/weather-signals` | Any weather data, ensemble, probability, calibration work | Open-Meteo API patterns, probability computation, forecast verification |
+| `/trading-engine` | Kelly sizing, risk management, paper trading, strategy logic | Position sizing, risk checks, strategy interface, approval flow |
+| `/backtesting` | Backtest runs, performance metrics, go-live assessment | BacktestRunner patterns, Brier/calibration/equity curve computation |
+| `/market-scanner` | "find markets", "scan Polymarket", "which markets are active" | Discovers + filters + ranks weather markets by volume, liquidity, time-to-resolution |
+| `/signal-monitor` | "check signals", "any high-edge opportunities", "signal log" | Reads live signals, flags anomalies, reports edge quality and model agreement |
+| `/architect` | "how should I structure this", "design decision", before any non-trivial feature | Architecture review: coupling, testability, layer alignment — before code is written |
+| `/supabase-queries` | Any database read/write, Supabase table access | Standard query patterns for markets, orderbook, paper trades, backtests, forecasts |
+| `/performance-report` | "how are we doing", "weekly review", "are we ready to go live" | Structured performance report: Brier trend, strategy comparison, go-live readiness |
+
 ### Mandatory Order
 
 1. **Write code**
 2. **Write tests** — use `/write-backend-tests` or `/write-frontend-tests`
 3. **Run tests locally** — use `/local-testing`
 4. **Commit** — `/pre-commit-verify` runs automatically (lint + types + secret scan)
-5. **Deploy** — `/pre-deploy-check` runs automatically (full build + all checks)
+5. **Update backlog** — use `/backlog-update` after every feature (add follow-ups, deferred items, discovered improvements)
+6. **Deploy** — `/pre-deploy-check` runs automatically (full build + all checks)
+
+## Project Management
+
+The human is the **tester and direction-setter**. Agents handle implementation, analysis, and
+improvement proposals. This only works if agents actively maintain the backlog.
+
+### Agent Responsibilities
+
+Every agent working on this project MUST:
+
+1. **Before starting any task** — read `docs/backlog/BACKLOG.md` and confirm the task is in scope
+2. **After completing any task** — run `/backlog-update` to capture:
+   - Follow-up items discovered during implementation
+   - Deferred scope that was cut to keep the task small
+   - Edge cases that should be handled later
+   - Small improvements noticed in adjacent code
+3. **When reviewing algorithms** — run `/day-trader` to evaluate performance and add improvement items
+4. **Proactively** — if you notice something that could be improved in 5 minutes, just fix it; if it takes longer, add to backlog
+
+### When Tokens Are Available (Maintenance Mode)
+
+When the human says "go ahead and work on the backlog" or "use your tokens":
+
+1. Read BACKLOG.md top-to-bottom
+2. Pick the highest-priority P1 item, or ask which P2 item to start
+3. Run `/day-trader` review if no urgent code items (algorithm evaluation)
+4. After any work, always update BACKLOG.md
+
+### Backlog Location
+
+```
+docs/backlog/BACKLOG.md      ← Active backlog
+docs/backlog/done/           ← Completed large features
+docs/superpowers/plans/      ← Implementation plans
+```
 
 ### Before Every Commit
 Run `/pre-commit-verify` or manually:

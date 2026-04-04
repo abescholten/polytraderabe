@@ -520,3 +520,21 @@ CREATE TABLE public.backtest_runs (
 3. **Go-live assessment is automated** — no manual overriding of failing criteria
 4. **Walk-forward validation is mandatory** — never evaluate on the same data you optimized on
 5. **Paper trading complements backtesting** — backtest passes are necessary but not sufficient
+
+## Real Backtesting Implementation
+
+The `WeatherBacktester` class in `src/trading/backtesting/weather.py` (planned) provides
+proper historical replay — for each day in the range it fetches ERA5 actuals as ground truth
+and computes what the ensemble forecast would have predicted. Returns `BacktestResult` with
+Brier score, reliability, win rate, and mean edge.
+
+The older `backtest()` method on `WeatherTemperatureStrategy` was a simplified simulation
+and has been replaced to delegate to `WeatherBacktester`.
+
+## After Any Backtest Work
+
+Run `/day-trader` to evaluate the results and `/backlog-update` to capture:
+- Algorithm improvements revealed by backtest data
+- New market categories to test
+- Parameter tuning opportunities
+- Go-live readiness assessment findings
