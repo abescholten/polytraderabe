@@ -9,8 +9,7 @@ import { EnsembleChart } from '@/components/weather/ensemble-chart'
 import { ForecastTable } from '@/components/weather/forecast-table'
 import { WeatherLegend } from '@/components/weather/weather-legend'
 import { ActualsChart } from '@/components/weather/actuals-chart'
-import type { CityDetail } from '@/types/weather'
-import type { CityActuals } from '@/types/weather'
+import type { CityDetail, CityActuals } from '@/types/weather'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -48,7 +47,7 @@ export default function CityWeatherPage() {
     if (!city) return
     Promise.all([
       tradingApi.getWeatherByCity(city),
-      tradingApi.getWeatherActuals(city, 30),
+      tradingApi.getWeatherActuals(city, 30).catch(() => null),
     ])
       .then(([forecast, actualsData]) => {
         setData(forecast)
