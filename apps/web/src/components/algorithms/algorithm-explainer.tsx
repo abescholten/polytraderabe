@@ -1,3 +1,5 @@
+'use client'
+
 import { Layers, RefreshCw, TrendingUp, Target, Calculator } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
