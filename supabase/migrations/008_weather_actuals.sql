@@ -28,7 +28,3 @@ CREATE POLICY "Authenticated users can read weather actuals"
 CREATE POLICY "Anon users can read weather actuals"
     ON public.weather_actuals FOR SELECT
     TO anon USING (true);
-
-CREATE POLICY "Service role can insert weather actuals"
-    ON public.weather_actuals FOR INSERT
-    TO authenticated WITH CHECK (true);
