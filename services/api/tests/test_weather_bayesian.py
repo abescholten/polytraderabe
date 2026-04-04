@@ -39,9 +39,9 @@ async def test_generate_signal_returns_none_when_no_edge(
             "src.trading.strategies.weather_bayesian.fetch_multi_model_ensemble",
             new_callable=AsyncMock,
             return_value={
-                "ecmwf_ifs025_ensemble": {"temperature_2m_max": [[18.2] * 51]},
-                "gfs_seamless_eps": {"temperature_2m_max": [[18.1] * 31]},
-                "icon_seamless_eps": {"temperature_2m_max": [[18.0] * 40]},
+                "ecmwf_ifs": {"temperature_2m_max": [[18.2] * 51]},
+                "gfs_seamless": {"temperature_2m_max": [[18.1] * 31]},
+                "icon_seamless": {"temperature_2m_max": [[18.0] * 40]},
             },
         ),
         patch(
@@ -73,9 +73,9 @@ async def test_generate_signal_returns_signal_when_edge_exists(
             "src.trading.strategies.weather_bayesian.fetch_multi_model_ensemble",
             new_callable=AsyncMock,
             return_value={
-                "ecmwf_ifs025_ensemble": {"temperature_2m_max": [[16.0] * 51]},
-                "gfs_seamless_eps": {"temperature_2m_max": [[16.0] * 31]},
-                "icon_seamless_eps": {"temperature_2m_max": [[16.0] * 40]},
+                "ecmwf_ifs": {"temperature_2m_max": [[16.0] * 51]},
+                "gfs_seamless": {"temperature_2m_max": [[16.0] * 31]},
+                "icon_seamless": {"temperature_2m_max": [[16.0] * 40]},
             },
         ),
         patch(

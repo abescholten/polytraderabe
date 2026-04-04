@@ -22,13 +22,12 @@ logger = logging.getLogger(__name__)
 
 # Models and their update frequency (runs/day) — higher = more recent data
 MODEL_RECENCY_WEIGHTS: dict[str, float] = {
-    "ecmwf_ifs025_ensemble": 2.0,   # 00 + 12 UTC
-    "gfs_seamless_eps": 4.0,        # 00, 06, 12, 18 UTC
-    "icon_seamless_eps": 4.0,       # 00, 06, 12, 18 UTC
+    "ecmwf_ifs": 2.0,       # 00 + 12 UTC
+    "gfs_seamless": 4.0,    # 00, 06, 12, 18 UTC
+    "icon_seamless": 4.0,   # 00, 06, 12, 18 UTC
 }
 
 MIN_EDGE = 0.08
-KELLY_FRACTION = 0.25
 
 # Celsius-aware regex patterns (supplement the Fahrenheit patterns in weather_temp.py)
 _CELSIUS_ABOVE = re.compile(
