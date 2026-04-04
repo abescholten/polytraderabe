@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import httpx
 import numpy as np
 from datetime import date
