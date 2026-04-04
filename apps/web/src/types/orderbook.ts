@@ -15,6 +15,8 @@ export interface OrderbookSnapshot {
   spread: number | null
   bid_depth: number // total $ size on bid side
   ask_depth: number
+  num_bid_levels: number
+  num_ask_levels: number
   recorded_at: string // ISO timestamp
 }
 

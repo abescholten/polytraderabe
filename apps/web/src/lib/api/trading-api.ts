@@ -75,7 +75,7 @@ export const tradingApi = {
     id: string,
     side: 'YES' | 'NO' = 'YES',
     hours = 24,
-    intervalMinutes = 5,
+    intervalMinutes = 5, // dashboard default; backend default is 1 minute
   ) =>
     fetchApi<OrderbookHistoryResponse>(
       `/api/markets/${id}/orderbook/history?side=${side}&hours=${hours}&interval_minutes=${intervalMinutes}`,
