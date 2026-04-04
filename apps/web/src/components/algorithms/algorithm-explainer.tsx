@@ -1,7 +1,6 @@
 import { Layers, RefreshCw, TrendingUp, Target, Calculator } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import type React from 'react'
 
 interface AlgorithmInfo {
   id: string
@@ -11,7 +10,7 @@ interface AlgorithmInfo {
   steps: [string, string, string]
   bestFor: string
   risk: 'laag' | 'gemiddeld' | 'hoog'
-  Icon: React.ElementType
+  Icon: typeof Layers
   accentColor: string
 }
 
@@ -131,16 +130,17 @@ export function AlgorithmExplainer() {
                       riskBadgeClass[algo.risk]
                     )}
                   >
-                    {algo.risk}
+                    {algo.risk} risico
                   </span>
                 </div>
                 <p className="mt-1 text-xs italic text-[#8b8f9a]">{algo.tagline}</p>
               </CardHeader>
 
               <CardContent className="flex flex-col gap-3">
-                <p className="text-sm text-[#c9cbd0]">{algo.description}</p>
+                <p className="text-sm leading-relaxed text-[#c9cbd0]">{algo.description}</p>
 
                 <ol className="flex flex-col gap-1.5 rounded-lg bg-[#0f1117] px-4 py-3">
+                  <p className="mb-2 text-xs font-medium text-[#8b8f9a]">Hoe het werkt:</p>
                   {algo.steps.map((step, index) => (
                     <li key={index} className="flex gap-2 text-xs text-[#8b8f9a]">
                       <span className="shrink-0 font-mono font-semibold text-[#c9cbd0]">
