@@ -107,7 +107,7 @@ export function AlgorithmExplainer() {
   return (
     <section className="flex flex-col gap-6">
       <div>
-        <h2 className="text-xl font-semibold text-[#e8eaed]">Hoe handelen we?</h2>
+        <h3 className="text-sm font-semibold text-[#e8eaed]">Hoe handelen we?</h3>
         <p className="mt-1 text-sm text-[#8b8f9a]">
           Vijf methodes die ons systeem gebruikt om weermarkten te analyseren en te handelen
         </p>
@@ -139,17 +139,17 @@ export function AlgorithmExplainer() {
               <CardContent className="flex flex-col gap-3">
                 <p className="text-sm leading-relaxed text-[#c9cbd0]">{algo.description}</p>
 
-                <ol className="flex flex-col gap-1.5 rounded-lg bg-[#0f1117] px-4 py-3">
+                <div className="rounded-lg bg-[#0f1117] p-3">
                   <p className="mb-2 text-xs font-medium text-[#8b8f9a]">Hoe het werkt:</p>
-                  {algo.steps.map((step, index) => (
-                    <li key={index} className="flex gap-2 text-xs text-[#8b8f9a]">
-                      <span className="shrink-0 font-mono font-semibold text-[#c9cbd0]">
-                        {index + 1}.
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ol>
+                  <ol className="flex flex-col gap-1">
+                    {algo.steps.map((step, index) => (
+                      <li key={index} className="flex gap-2 text-xs text-[#8b8f9a]">
+                        <span className="shrink-0 font-mono text-[#3b82f6]">{index + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
 
                 <p className="text-xs text-[#8b8f9a]">
                   <span className="font-medium text-[#c9cbd0]">Best ingezet: </span>
