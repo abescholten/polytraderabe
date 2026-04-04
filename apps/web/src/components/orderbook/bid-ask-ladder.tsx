@@ -66,7 +66,7 @@ export function BidAskLadder({ snapshot }: Props) {
         <div className="px-3 pb-0.5 text-[10px] font-semibold text-red-400">Asks</div>
         {[...topAsks].reverse().map((level, i) => (
           <LevelRow
-            key={`ask-${i}`}
+            key={`ask-${level.price}`}
             price={level.price}
             size={level.size}
             maxSize={maxAskSize}
@@ -88,7 +88,7 @@ export function BidAskLadder({ snapshot }: Props) {
         <div className="px-3 pb-0.5 text-[10px] font-semibold text-emerald-400">Bids</div>
         {topBids.map((level, i) => (
           <LevelRow
-            key={`bid-${i}`}
+            key={`bid-${level.price}`}
             price={level.price}
             size={level.size}
             maxSize={maxBidSize}
