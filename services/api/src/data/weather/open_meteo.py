@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import httpx
+import logging
 import numpy as np
 from datetime import date
-from typing import Optional
 
 
 OPEN_METEO_ENSEMBLE_URL = "https://ensemble-api.open-meteo.com/v1/ensemble"
@@ -128,4 +130,54 @@ async def fetch_historical_actuals(
         values = hourly.get(var, [])
         result[var] = np.array(values, dtype=float)
 
+    return result
+
+
+async def fetch_daily_max_actuals(
+    lat: float,
+    lon: float,
+    start_date: date,
+    end_date: date,
+) -> list[dict]:
+    """Fetch ERA5 hourly temps and aggregate to daily max/min/mean.
+
+    Returns list of dicts: {date, daily_max, daily_min, daily_mean}
+    """
+    data = await fetch_historical_actuals(
+        lat=lat,
+        lon=lon,
+        start_date=start_date,
+        end_date=end_date,
+        variables=["temperature_2m"],
+    )
+
+    times = data.get("time", [])
+    temps: np.ndarray = data.get("temperature_2m", np.array([]))
+
+    if len(times) == 0 or len(temps) == 0:
+        return []
+
+    if len(times) != len(temps):
+        logging.getLogger(__name__).warning(
+            "open_meteo: times/temps length mismatch (%d vs %d), truncating",
+            len(times), len(temps),
+        )
+
+    # Group hourly values by calendar date
+    by_date: dict[date, list[float]] = {}
+    for t_str, val in zip(times, temps.tolist()):
+        if np.isnan(val):
+            continue
+        d = date.fromisoformat(t_str[:10])
+        by_date.setdefault(d, []).append(val)
+
+    result = []
+    for d in sorted(by_date):
+        vals = by_date[d]
+        result.append({
+            "date": d,
+            "daily_max": round(float(np.max(vals)), 1),
+            "daily_min": round(float(np.min(vals)), 1),
+            "daily_mean": round(float(np.mean(vals)), 1),
+        })
     return result

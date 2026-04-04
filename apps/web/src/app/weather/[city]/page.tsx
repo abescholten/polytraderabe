@@ -8,7 +8,8 @@ import { tradingApi } from '@/lib/api/trading-api'
 import { EnsembleChart } from '@/components/weather/ensemble-chart'
 import { ForecastTable } from '@/components/weather/forecast-table'
 import { WeatherLegend } from '@/components/weather/weather-legend'
-import type { CityDetail } from '@/types/weather'
+import { ActualsChart } from '@/components/weather/actuals-chart'
+import type { CityDetail, CityActuals } from '@/types/weather'
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -40,12 +41,18 @@ export default function CityWeatherPage() {
   const [data, setData] = useState<CityDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [actuals, setActuals] = useState<CityActuals | null>(null)
 
   useEffect(() => {
     if (!city) return
-    tradingApi
-      .getWeatherByCity(city)
-      .then(setData)
+    Promise.all([
+      tradingApi.getWeatherByCity(city),
+      tradingApi.getWeatherActuals(city, 30).catch(() => null),
+    ])
+      .then(([forecast, actualsData]) => {
+        setData(forecast)
+        setActuals(actualsData)
+      })
       .catch((err) => {
         setError(err instanceof Error ? err.message : 'Failed to fetch city data')
       })
@@ -103,6 +110,15 @@ export default function CityWeatherPage() {
 
       {!loading && !error && data && data.forecasts.length > 0 && (
         <div className="space-y-6">
+          {actuals && actuals.actuals.length > 0 && (
+            <div className="rounded-xl border border-[#2e3240] bg-[#1a1d27] p-4">
+              <h3 className="mb-4 text-sm font-medium text-[#8b8f9a]">
+                Historische temperatuur (30 dagen)
+              </h3>
+              <ActualsChart actuals={actuals.actuals} />
+            </div>
+          )}
+
           <div className="rounded-xl border border-[#2e3240] bg-[#1a1d27] p-4">
             <h3 className="mb-4 text-sm font-medium text-[#8b8f9a]">
               Ensemble Spread
