@@ -3,6 +3,7 @@ import type { Trade, Position } from '@/types/trade'
 import type { Strategy, StrategyPerformance } from '@/types/strategy'
 import type { Market } from '@/types/market'
 import type { CityWeather, CityDetail } from '@/types/weather'
+import type { OrderbookSnapshot, OrderbookHistoryResponse } from '@/types/orderbook'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -66,6 +67,19 @@ export const tradingApi = {
     return fetchApi<Market[]>(`/api/markets${params}`)
   },
   getMarket: (id: string) => fetchApi<Market>(`/api/markets/${id}`),
+
+  getOrderbook: (id: string) =>
+    fetchApi<{ snapshots: OrderbookSnapshot[] }>(`/api/markets/${id}/orderbook`),
+
+  getOrderbookHistory: (
+    id: string,
+    side: 'YES' | 'NO' = 'YES',
+    hours = 24,
+    intervalMinutes = 5,
+  ) =>
+    fetchApi<OrderbookHistoryResponse>(
+      `/api/markets/${id}/orderbook/history?side=${side}&hours=${hours}&interval_minutes=${intervalMinutes}`,
+    ),
 
   // Weather
   getWeatherForecasts: () =>
