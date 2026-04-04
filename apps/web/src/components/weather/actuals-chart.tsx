@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import {
   ComposedChart,
   Area,
@@ -16,26 +17,33 @@ interface ActualsChartProps {
   actuals: WeatherActual[]
 }
 
-function ActualsTooltip({
-  active,
-  payload,
-  label,
-}: {
+interface TooltipProps {
   active?: boolean
-  payload?: Array<{ dataKey: string; value: unknown; color: string }>
   label?: string
-}) {
-  if (!active || !payload || payload.length === 0) return null
+  payload?: Array<{ dataKey: string; value: number | [number, number] | null }>
+}
 
+function ActualsTooltip({ active, label, payload }: TooltipProps) {
+  if (!active || !payload?.length) return null
   const meanEntry = payload.find((p) => p.dataKey === 'mean')
-  const mean = meanEntry?.value
+  const rangeEntry = payload.find((p) => p.dataKey === 'range')
+  const meanVal = typeof meanEntry?.value === 'number' ? meanEntry.value : null
+  const rangeVal = Array.isArray(rangeEntry?.value)
+    ? (rangeEntry.value as [number, number])
+    : null
 
   return (
-    <div className="rounded-lg border border-[#2e3240] bg-[#1a1d27] px-3 py-2 shadow-lg">
-      <p className="mb-1 font-mono text-xs text-[#9ca3af]">{label}</p>
-      {mean !== null && mean !== undefined && (
-        <p className="font-mono text-sm text-[#3b82f6]">
-          Gemiddeld: {(mean as number).toFixed(1)}&deg;C
+    <div
+      className="rounded-lg border border-[#2e3240] bg-[#1a1d27] p-2 text-xs font-mono"
+      style={{ fontSize: 12 }}
+    >
+      <p className="mb-1 text-[#e8eaed]">{label}</p>
+      {meanVal !== null && (
+        <p className="text-[#3b82f6]">Gemiddeld: {meanVal.toFixed(1)}°C</p>
+      )}
+      {rangeVal && (
+        <p className="text-[#9ca3af]">
+          Spreiding: {rangeVal[0].toFixed(1)}° – {rangeVal[1].toFixed(1)}°C
         </p>
       )}
     </div>
@@ -43,11 +51,22 @@ function ActualsTooltip({
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+  const [, month, day] = iso.split('-').map(Number)
+  return new Date(Date.UTC(2000, month - 1, day))
+    .toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
 export function ActualsChart({ actuals }: ActualsChartProps) {
+  const data = useMemo(() =>
+    actuals.map((a) => ({
+      date: formatDate(a.date),
+      range: a.daily_min !== null && a.daily_max !== null
+        ? ([a.daily_min, a.daily_max] as [number, number])
+        : null,
+      mean: a.daily_mean,
+    })),
+  [actuals])
+
   if (actuals.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-[#8b8f9a]">
@@ -55,12 +74,6 @@ export function ActualsChart({ actuals }: ActualsChartProps) {
       </p>
     )
   }
-
-  const data = actuals.map((a) => ({
-    date: formatDate(a.date),
-    range: [a.daily_min ?? 0, a.daily_max ?? 0] as [number, number],
-    mean: a.daily_mean,
-  }))
 
   return (
     <ResponsiveContainer width="100%" height={260}>
@@ -87,6 +100,7 @@ export function ActualsChart({ actuals }: ActualsChartProps) {
           fillOpacity={0.2}
           stroke="none"
           isAnimationActive={false}
+          connectNulls={false}
         />
         <Line
           type="monotone"
@@ -96,6 +110,7 @@ export function ActualsChart({ actuals }: ActualsChartProps) {
           dot={false}
           name="mean"
           isAnimationActive={false}
+          connectNulls={false}
         />
       </ComposedChart>
     </ResponsiveContainer>
