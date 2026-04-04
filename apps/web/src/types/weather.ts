@@ -32,3 +32,15 @@ export interface CityDetail {
   fetched_at: string | null
   forecasts: CityDetailForecast[]
 }
+
+export interface WeatherActual {
+  date: string        // ISO date, e.g. "2024-01-01"
+  daily_max: number | null
+  daily_min: number | null
+  daily_mean: number | null
+}
+
+export interface CityActuals {
+  city: string
+  actuals: WeatherActual[]
+}
