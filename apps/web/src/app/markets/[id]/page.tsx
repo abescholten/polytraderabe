@@ -37,7 +37,9 @@ export default function MarketDetailPage() {
         setYesSnapshot(yes)
         setNoSnapshot(no)
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('[MarketDetailPage] failed to load market/orderbook:', err)
+      })
       .finally(() => setLoading(false))
   }, [id])
 
@@ -162,7 +164,7 @@ export default function MarketDetailPage() {
             <CardTitle className="text-sm text-[#e8eaed]">Depth chart</CardTitle>
           </CardHeader>
           <CardContent>
-            <DepthChart snapshot={yesSnapshot} loading={loading} />
+            <DepthChart snapshot={yesSnapshot} />
             {noSnapshot && (
               <>
                 <p className="mt-4 mb-2 text-xs font-semibold text-[#8b8f9a]">
