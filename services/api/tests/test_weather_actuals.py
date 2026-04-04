@@ -158,3 +158,65 @@ def test_get_actuals_returns_rows():
     assert data["actuals"][0]["date"] == "2024-01-01"
     assert data["actuals"][0]["daily_max"] == 8.5
     assert data["actuals"][1]["daily_min"] == 3.0
+
+
+@pytest.mark.asyncio
+async def test_backfill_upserts_rows_for_all_cities():
+    """POST /weather/backfill calls upsert for each city that has data."""
+    from src.api.weather_actuals_api import router, CITIES
+    from fastapi import FastAPI
+    app = FastAPI()
+    app.include_router(router, prefix="/weather")
+
+    fake_daily = [{"date": date(2024, 1, 1), "daily_max": 10.0, "daily_min": 5.0, "daily_mean": 7.5}]
+    mock_db = MagicMock()
+    mock_db.table.return_value.upsert.return_value.execute.return_value = MagicMock()
+
+    with patch("src.api.weather_actuals_api.fetch_daily_max_actuals", new=AsyncMock(return_value=fake_daily)) as mock_fetch, \
+         patch("src.api.weather_actuals_api.get_supabase", return_value=mock_db):
+        client = TestClient(app)
+        resp = client.post("/weather/backfill?days=7")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["errors"] == {}
+    assert set(data["rows_upserted"].keys()) == set(CITIES.keys())
+    assert all(v == 1 for v in data["rows_upserted"].values())
+    assert mock_fetch.call_count == len(CITIES)
+
+
+@pytest.mark.asyncio
+async def test_backfill_skips_upsert_when_no_rows():
+    """POST /weather/backfill does not call upsert for cities with empty data."""
+    from src.api.weather_actuals_api import router
+    from fastapi import FastAPI
+    app = FastAPI()
+    app.include_router(router, prefix="/weather")
+
+    mock_db = MagicMock()
+
+    with patch("src.api.weather_actuals_api.fetch_daily_max_actuals", new=AsyncMock(return_value=[])), \
+         patch("src.api.weather_actuals_api.get_supabase", return_value=mock_db):
+        client = TestClient(app)
+        resp = client.post("/weather/backfill?days=7")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert all(v == 0 for v in data["rows_upserted"].values())
+    mock_db.table.return_value.upsert.assert_not_called()
+
+
+def test_get_actuals_returns_404_for_unknown_city():
+    """GET /weather/actuals/{city} returns 404 for cities not in CITIES dict."""
+    from src.api.weather_actuals_api import router
+    from fastapi import FastAPI
+    app = FastAPI()
+    app.include_router(router, prefix="/weather")
+
+    with patch("src.api.weather_actuals_api.get_supabase"):
+        client = TestClient(app)
+        resp = client.get("/weather/actuals/atlantis")
+
+    assert resp.status_code == 404

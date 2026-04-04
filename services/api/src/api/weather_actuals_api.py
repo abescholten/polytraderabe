@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 
 from src.data.weather.open_meteo import fetch_daily_max_actuals
 from src.db.client import get_supabase
@@ -32,20 +33,21 @@ async def get_weather_actuals(
     days: int = Query(default=30, ge=1, le=365),
 ):
     """Return stored ERA5 daily actuals for a city (oldest first)."""
+    city_lower = city.lower()
+    if city_lower not in CITIES:
+        raise HTTPException(status_code=404, detail=f"Unknown city: {city!r}")
     db = get_supabase()
     since = (date.today() - timedelta(days=days)).isoformat()
-
     resp = (
         db.table("weather_actuals")
         .select("date, daily_max_celsius, daily_min_celsius, daily_mean_celsius")
-        .eq("city", city.lower())
+        .eq("city", city_lower)
         .gte("date", since)
         .order("date", desc=False)
         .limit(days)
         .execute()
     )
     rows = resp.data or []
-
     actuals = [
         {
             "date": r["date"],
@@ -55,7 +57,7 @@ async def get_weather_actuals(
         }
         for r in rows
     ]
-    return {"city": city.lower(), "actuals": actuals}
+    return {"city": city_lower, "actuals": actuals}
 
 
 @router.post("/backfill")
@@ -63,19 +65,35 @@ async def backfill_weather_actuals(days: int = Query(default=90, ge=1, le=730)):
     """Fetch ERA5 actuals for all 12 cities and upsert into weather_actuals.
 
     Safe to call multiple times — uses UPSERT on (city, date, source).
+    Fetches all cities in parallel to stay within Vercel function timeout.
     """
     db = get_supabase()
     end_date = date.today() - timedelta(days=2)   # ERA5 has ~2-day lag
     start_date = end_date - timedelta(days=days - 1)
 
+    async def _fetch_city(city: str, lat: float, lon: float) -> tuple[str, list[dict], str | None]:
+        try:
+            daily = await fetch_daily_max_actuals(
+                lat=lat, lon=lon, start_date=start_date, end_date=end_date
+            )
+            return city, daily, None
+        except Exception as exc:
+            return city, [], str(exc)
+
+    city_tasks = [
+        _fetch_city(city, lat, lon)
+        for city, (lat, lon) in CITIES.items()
+    ]
+    city_results = await asyncio.gather(*city_tasks)
+
     results: dict[str, int] = {}
-    for city, (lat, lon) in CITIES.items():
-        daily = await fetch_daily_max_actuals(
-            lat=lat,
-            lon=lon,
-            start_date=start_date,
-            end_date=end_date,
-        )
+    errors: dict[str, str] = {}
+    for city, daily, error in city_results:
+        if error is not None:
+            errors[city] = error
+            results[city] = 0
+            continue
+        lat, lon = CITIES[city]
         rows = [
             {
                 "city": city,
@@ -95,4 +113,8 @@ async def backfill_weather_actuals(days: int = Query(default=90, ge=1, le=730)):
             ).execute()
         results[city] = len(rows)
 
-    return {"status": "ok", "rows_upserted": results}
+    return {
+        "status": "partial" if errors else "ok",
+        "rows_upserted": results,
+        "errors": errors,
+    }
