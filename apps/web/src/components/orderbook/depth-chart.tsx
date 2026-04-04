@@ -27,7 +27,8 @@ function buildDepthSeries(snapshot: OrderbookSnapshot): DepthPoint[] {
   // Bids: sorted highest price first (already from API) — cumulate top-down
   const bidPoints: DepthPoint[] = []
   let bidCum = 0
-  for (const level of snapshot.bids) {
+  for (let i = snapshot.bids.length - 1; i >= 0; i--) {
+    const level = snapshot.bids[i]
     bidCum += Number(level.size)
     bidPoints.push({ price: Number(level.price), bidCumulative: bidCum, askCumulative: null })
   }
@@ -58,7 +59,7 @@ function CustomTooltip({
     <div className="rounded border border-[#2e3240] bg-[#1a1d27] px-3 py-2 text-xs">
       <p className="mb-1 text-[#8b8f9a]">{`${(label * 100).toFixed(1)}%`}</p>
       {payload.map((p) => {
-        if (p.value === null) return null
+        if (p.value == null) return null
         return (
           <p key={p.dataKey} style={{ color: p.color }}>
             {p.dataKey === 'bidCumulative' ? 'Bid depth' : 'Ask depth'}:{' '}
