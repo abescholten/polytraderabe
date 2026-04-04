@@ -42,10 +42,10 @@ function CustomTooltip({
   return (
     <div className="rounded border border-[#2e3240] bg-[#1a1d27] px-3 py-2 text-xs">
       <p className="mb-1 text-[#8b8f9a]">{label}</p>
-      {mid !== undefined && (
+      {typeof mid === 'number' && (
         <p className="text-[#e8eaed]">Mid: {`${(mid * 100).toFixed(1)}%`}</p>
       )}
-      {bid !== undefined && ask !== undefined && (
+      {typeof bid === 'number' && typeof ask === 'number' && (
         <p className="text-[#8b8f9a]">
           Bid {`${(bid * 100).toFixed(1)}%`} / Ask {`${(ask * 100).toFixed(1)}%`}
         </p>

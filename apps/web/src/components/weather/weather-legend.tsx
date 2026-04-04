@@ -102,7 +102,7 @@ interface SwatchItem {
 interface LegendItemDef {
   label: string
   desc: string
-  swatches?: SwatchItem[]
+  swatches?: readonly SwatchItem[]
 }
 
 function LegendItem({ item }: { item: LegendItemDef }) {

@@ -64,7 +64,7 @@ export function BidAskLadder({ snapshot }: Props) {
       {/* Asks (lowest ask at bottom — closest to mid) */}
       <div className="mb-0.5">
         <div className="px-3 pb-0.5 text-[10px] font-semibold text-red-400">Asks</div>
-        {[...topAsks].reverse().map((level, i) => (
+        {[...topAsks].reverse().map((level) => (
           <LevelRow
             key={`ask-${level.price}`}
             price={level.price}
@@ -86,7 +86,7 @@ export function BidAskLadder({ snapshot }: Props) {
       {/* Bids (highest bid at top — closest to mid) */}
       <div className="mt-0.5">
         <div className="px-3 pb-0.5 text-[10px] font-semibold text-emerald-400">Bids</div>
-        {topBids.map((level, i) => (
+        {topBids.map((level) => (
           <LevelRow
             key={`bid-${level.price}`}
             price={level.price}

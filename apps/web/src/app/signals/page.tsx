@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +24,7 @@ export default function SignalsPage() {
   const [historySignals, setHistorySignals] = useState<Signal[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchSignals = () => {
+  const fetchSignals = useCallback(() => {
     setLoading(true)
     Promise.all([
       tradingApi.getSignals('pending').catch(() => []),
@@ -35,11 +35,12 @@ export default function SignalsPage() {
         setHistorySignals(all.filter((s: Signal) => s.status !== 'pending'))
       })
       .finally(() => setLoading(false))
-  }
+  }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSignals()
-  }, [])
+  }, [fetchSignals])
 
   const handleApprove = async (id: string) => {
     try {
