@@ -414,3 +414,21 @@ async def generate_weather_signal(
 4. **Forecasts degrade with lead time** — weight signals by lead time (1-3 days = high confidence, 5+ days = lower)
 5. **ERA5 has a 5-day lag** — don't use for real-time verification
 6. **Open-Meteo is not for commercial use on free tier** — if this generates revenue, upgrade to their API plan
+
+## Available Algorithms (in `src/data/weather/`)
+
+| Module | Algorithms | Status |
+|---|---|---|
+| `probability.py` | `threshold_probability`, `daily_max_probability`, `multi_model_probability` | Stable |
+| `algorithms.py` | `kde_threshold_probability`, `bayesian_probability`, `weighted_model_blend` | Planned (see weather-data-foundation plan) |
+| `calibration.py` | `brier_score`, `calibration_curve`, `reliability_score` | Planned |
+
+City coordinates live in `src/data/cities.py` (planned — currently in `weather_temp.py`).
+
+## After Any Weather Data Work
+
+Run `/backlog-update` to capture:
+- New algorithm ideas or improvements
+- Cities missing from the registry
+- Variables missing from Open-Meteo fetches
+- Calibration issues found during testing
