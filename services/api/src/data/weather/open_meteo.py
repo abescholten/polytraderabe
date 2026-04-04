@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import httpx
+import logging
 import numpy as np
 from datetime import date
-from typing import Optional
 
 
 OPEN_METEO_ENSEMBLE_URL = "https://ensemble-api.open-meteo.com/v1/ensemble"
@@ -155,10 +157,16 @@ async def fetch_daily_max_actuals(
     if len(times) == 0 or len(temps) == 0:
         return []
 
+    if len(times) != len(temps):
+        logging.getLogger(__name__).warning(
+            "open_meteo: times/temps length mismatch (%d vs %d), truncating",
+            len(times), len(temps),
+        )
+
     # Group hourly values by calendar date
     by_date: dict[date, list[float]] = {}
     for t_str, val in zip(times, temps.tolist()):
-        if val is None or (isinstance(val, float) and np.isnan(val)):
+        if np.isnan(val):
             continue
         d = date.fromisoformat(t_str[:10])
         by_date.setdefault(d, []).append(val)
