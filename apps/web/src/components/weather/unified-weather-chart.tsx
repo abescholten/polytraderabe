@@ -126,9 +126,9 @@ export function UnifiedWeatherChart({
       })
     }
 
-    // Fill forecasts (today and future)
+    // Fill forecasts (gap period + future — backend already limits to today-5)
     for (const f of forecasts) {
-      if (f.forecast_date < today || f.forecast_date > fwdStr) continue
+      if (f.forecast_date < backStr || f.forecast_date > fwdStr) continue
       const ecmwf = f.models['ecmwf_ifs']
       const gfs = f.models['gfs_seamless']
       const existing = pointsMap.get(f.forecast_date)
@@ -223,7 +223,7 @@ export function UnifiedWeatherChart({
               fillOpacity={0.08}
               stroke="none"
               isAnimationActive={false}
-              connectNulls={false}
+              connectNulls={true}
             />
             <Line
               type="monotone"

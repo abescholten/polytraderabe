@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from fastapi import APIRouter
 
 from src.db.client import get_supabase
@@ -66,38 +68,44 @@ async def get_weather_forecasts():
 async def get_weather_by_city(city: str):
     """Get detailed weather forecasts for a specific city.
 
-    Returns all models and forecast dates from the latest fetch.
+    Returns the most recent forecast per (forecast_date, model), looking back
+    5 days to cover the ERA5 lag gap between actuals and today's forecast.
     """
     db = get_supabase()
+    city_lower = city.lower()
 
-    # Get the most recent fetch for this city
-    latest = (
-        db.table("weather_forecasts")
-        .select("fetched_at")
-        .eq("city", city.lower())
-        .order("fetched_at", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not latest.data:
-        return {"city": city, "forecasts": [], "fetched_at": None}
-
-    latest_fetch = latest.data[0]["fetched_at"]
+    # Look back 5 days so gap-period forecasts (from previous syncs) are included
+    lookback = (date.today() - timedelta(days=5)).isoformat()
 
     resp = (
         db.table("weather_forecasts")
         .select("*")
-        .eq("city", city.lower())
-        .eq("fetched_at", latest_fetch)
+        .eq("city", city_lower)
+        .gte("forecast_date", lookback)
         .order("forecast_date")
         .order("model")
+        .order("fetched_at", desc=True)
         .execute()
     )
     records = resp.data or []
 
+    if not records:
+        return {"city": city_lower, "lat": None, "lon": None, "fetched_at": None, "forecasts": []}
+
+    # Keep the most recent fetched_at per (forecast_date, model)
+    seen: set[tuple[str, str]] = set()
+    deduplicated: list[dict] = []
+    for r in records:
+        key = (r["forecast_date"], r["model"])
+        if key not in seen:
+            seen.add(key)
+            deduplicated.append(r)
+
+    latest_fetch = max(r["fetched_at"] for r in deduplicated)
+
     # Group by forecast_date, then by model
     by_date: dict[str, dict] = {}
-    for r in records:
+    for r in deduplicated:
         d = r["forecast_date"]
         if d not in by_date:
             by_date[d] = {"forecast_date": d, "models": {}}
@@ -112,9 +120,9 @@ async def get_weather_by_city(city: str):
         }
 
     return {
-        "city": city.lower(),
-        "lat": records[0]["lat"] if records else None,
-        "lon": records[0]["lon"] if records else None,
+        "city": city_lower,
+        "lat": deduplicated[0]["lat"],
+        "lon": deduplicated[0]["lon"],
         "fetched_at": latest_fetch,
         "forecasts": list(by_date.values()),
     }

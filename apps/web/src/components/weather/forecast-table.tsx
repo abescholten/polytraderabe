@@ -20,9 +20,13 @@ function formatProb(
   forecast: CityDetailForecast,
   threshold: string
 ): { text: string; color: string } | null {
-  const ecmwf = forecast.models['ecmwf_ifs']
-  if (!ecmwf) return null
-  const prob = ecmwf.probability_above[threshold]
+  // ECMWF preferred, fall back to GFS or ICON when ECMWF sync failed
+  const model =
+    forecast.models['ecmwf_ifs'] ??
+    forecast.models['gfs_seamless'] ??
+    forecast.models['icon_seamless']
+  if (!model) return null
+  const prob = model.probability_above[threshold]
   if (prob === undefined) return null
   return {
     text: `${(prob * 100).toFixed(0)}%`,
