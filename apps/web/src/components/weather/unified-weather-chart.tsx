@@ -126,9 +126,9 @@ export function UnifiedWeatherChart({
       })
     }
 
-    // Fill forecasts (gap period + future — backend already limits to today-5)
+    // Fill forecasts — only from today onwards, never show stale past forecasts
     for (const f of forecasts) {
-      if (f.forecast_date < backStr || f.forecast_date > fwdStr) continue
+      if (f.forecast_date < today || f.forecast_date > fwdStr) continue
       const ecmwf = f.models['ecmwf_ifs']
       const gfs = f.models['gfs_seamless']
       const existing = pointsMap.get(f.forecast_date)
@@ -146,7 +146,17 @@ export function UnifiedWeatherChart({
       })
     }
 
-    return [...pointsMap.values()].sort((a, b) => a.date.localeCompare(b.date))
+    const sorted = [...pointsMap.values()].sort((a, b) => a.date.localeCompare(b.date))
+
+    // Bridge: anchor forecast lines at the last actual data point so connectNulls
+    // draws a seamless dashed line across the ERA5 lag gap (typically 1-2 days).
+    const lastActual = [...sorted].reverse().find((p) => p.actualMean !== null)
+    if (lastActual) {
+      lastActual.ecmwfMean = lastActual.ecmwfMean ?? lastActual.actualMean
+      lastActual.gfsMean = lastActual.gfsMean ?? lastActual.actualMean
+    }
+
+    return sorted
   }, [actuals, forecasts, daysBack, daysForward, today])
 
   if (data.length === 0) {
@@ -234,7 +244,7 @@ export function UnifiedWeatherChart({
               strokeDasharray="6 3"
               dot={false}
               isAnimationActive={false}
-              connectNulls={false}
+              connectNulls={true}
             />
 
             {/* Prognose GFS: gestippeld amber */}
@@ -247,7 +257,7 @@ export function UnifiedWeatherChart({
               strokeDasharray="6 3"
               dot={false}
               isAnimationActive={false}
-              connectNulls={false}
+              connectNulls={true}
             />
           </ComposedChart>
         </ResponsiveContainer>
