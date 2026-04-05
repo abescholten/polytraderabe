@@ -20,7 +20,7 @@ function formatProb(
   forecast: CityDetailForecast,
   threshold: string
 ): { text: string; color: string } | null {
-  const ecmwf = forecast.models['ecmwf']
+  const ecmwf = forecast.models['ecmwf_ifs']
   if (!ecmwf) return null
   const prob = ecmwf.probability_above[threshold]
   if (prob === undefined) return null
@@ -106,13 +106,13 @@ export function ForecastTable({
                 {forecast.forecast_date}
               </TableCell>
               <TableCell>
-                <ModelCell forecast={forecast} modelKey="ecmwf" />
+                <ModelCell forecast={forecast} modelKey="ecmwf_ifs" />
               </TableCell>
               <TableCell>
-                <ModelCell forecast={forecast} modelKey="gfs" />
+                <ModelCell forecast={forecast} modelKey="gfs_seamless" />
               </TableCell>
               <TableCell>
-                <ModelCell forecast={forecast} modelKey="icon" />
+                <ModelCell forecast={forecast} modelKey="icon_seamless" />
               </TableCell>
               <TableCell className="text-center">
                 {p15 ? (

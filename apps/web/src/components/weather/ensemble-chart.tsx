@@ -70,8 +70,8 @@ export function EnsembleChart({
 }) {
   const data = useMemo<ChartDataPoint[]>(() => {
     return forecasts.map((f) => {
-      const ecmwf = f.models['ecmwf']
-      const gfs = f.models['gfs']
+      const ecmwf = f.models['ecmwf_ifs']
+      const gfs = f.models['gfs_seamless']
       return {
         date: f.forecast_date,
         ecmwfMean: ecmwf?.mean ?? null,
