@@ -5,10 +5,10 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { tradingApi } from '@/lib/api/trading-api'
-import { EnsembleChart } from '@/components/weather/ensemble-chart'
+import { UnifiedWeatherChart } from '@/components/weather/unified-weather-chart'
 import { ForecastTable } from '@/components/weather/forecast-table'
 import { WeatherLegend } from '@/components/weather/weather-legend'
-import { ActualsChart } from '@/components/weather/actuals-chart'
+import { RangeSlider } from '@/components/weather/range-slider'
 import type { CityDetail, CityActuals } from '@/types/weather'
 
 function timeAgo(dateStr: string): string {
@@ -20,6 +20,10 @@ function timeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`
   const days = Math.floor(hours / 24)
   return `${days}d ago`
+}
+
+function isStale(dateStr: string): boolean {
+  return Date.now() - new Date(dateStr).getTime() > 2 * 60 * 60 * 1000
 }
 
 function capitalize(str: string): string {
@@ -42,12 +46,14 @@ export default function CityWeatherPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actuals, setActuals] = useState<CityActuals | null>(null)
+  const [daysBack, setDaysBack] = useState(14)
+  const [daysForward, setDaysForward] = useState(10)
 
   useEffect(() => {
     if (!city) return
     Promise.all([
       tradingApi.getWeatherByCity(city),
-      tradingApi.getWeatherActuals(city, 30).catch(() => null),
+      tradingApi.getWeatherActuals(city, 90).catch(() => null),
     ])
       .then(([forecast, actualsData]) => {
         setData(forecast)
@@ -82,9 +88,16 @@ export default function CityWeatherPage() {
             )}
           </div>
           {data?.fetched_at && (
-            <span className="inline-flex items-center rounded-md bg-[#2e3240] px-2.5 py-1 text-xs font-mono text-[#8b8f9a]">
-              Last sync: {timeAgo(data.fetched_at)}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center rounded-md bg-[#2e3240] px-2.5 py-1 text-xs font-mono text-[#8b8f9a]">
+                Last sync: {timeAgo(data.fetched_at)}
+              </span>
+              {isStale(data.fetched_at) && (
+                <span className="inline-flex items-center rounded-md bg-[#ef4444]/20 px-2.5 py-1 text-xs font-mono text-[#ef4444]">
+                  Data stale — sync may be broken
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -99,9 +112,7 @@ export default function CityWeatherPage() {
 
       {!loading && !error && data && data.forecasts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16">
-          <p className="text-lg font-medium text-[#8b8f9a]">
-            No data for this city
-          </p>
+          <p className="text-lg font-medium text-[#8b8f9a]">No data for this city</p>
           <p className="mt-1 text-sm text-[#8b8f9a]">
             Forecast data will appear once the pipeline processes this city.
           </p>
@@ -110,22 +121,36 @@ export default function CityWeatherPage() {
 
       {!loading && !error && data && data.forecasts.length > 0 && (
         <div className="space-y-6">
-          {actuals && actuals.actuals.length > 0 && (
-            <div className="rounded-xl border border-[#2e3240] bg-[#1a1d27] p-4">
-              <h3 className="mb-4 text-sm font-medium text-[#8b8f9a]">
-                Historische temperatuur (30 dagen)
-              </h3>
-              <ActualsChart actuals={actuals.actuals} />
-            </div>
-          )}
-
+          {/* Gecombineerde grafiek met schuivers */}
           <div className="rounded-xl border border-[#2e3240] bg-[#1a1d27] p-4">
             <h3 className="mb-4 text-sm font-medium text-[#8b8f9a]">
-              Ensemble Spread
+              Temperatuur — historisch &amp; prognose
             </h3>
-            <EnsembleChart forecasts={data.forecasts} />
+            <UnifiedWeatherChart
+              actuals={actuals?.actuals ?? []}
+              forecasts={data.forecasts}
+              daysBack={daysBack}
+              daysForward={daysForward}
+            />
+            <div className="mt-6 grid grid-cols-2 gap-6 border-t border-[#2e3240] pt-4">
+              <RangeSlider
+                label="Geschiedenis"
+                value={daysBack}
+                min={3}
+                max={90}
+                onChange={setDaysBack}
+              />
+              <RangeSlider
+                label="Prognose"
+                value={daysForward}
+                min={1}
+                max={10}
+                onChange={setDaysForward}
+              />
+            </div>
           </div>
 
+          {/* Dagelijkse prognose-tabel */}
           <div className="rounded-xl border border-[#2e3240] bg-[#1a1d27] p-4">
             <h3 className="mb-4 text-sm font-medium text-[#8b8f9a]">
               Daily Forecasts

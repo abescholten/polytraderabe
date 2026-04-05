@@ -9,6 +9,7 @@ from src.api.health import router as health_router
 from src.api.webhooks import router as webhooks_router
 from src.api.weather_api import router as weather_router
 from src.api.weather_actuals_api import router as weather_actuals_router
+from src.api.weather_cron import router as weather_cron_router
 
 app = FastAPI(
     title="PolyTrader API",
@@ -34,6 +35,7 @@ app.include_router(health_router, prefix="/health", tags=["Health"])
 app.include_router(webhooks_router, prefix="/webhook", tags=["Webhooks"])
 app.include_router(weather_router, prefix="/weather", tags=["Weather"])
 app.include_router(weather_actuals_router, prefix="/weather", tags=["Weather"])
+app.include_router(weather_cron_router, prefix="/weather", tags=["Weather Cron"])
 
 
 @app.get("/")

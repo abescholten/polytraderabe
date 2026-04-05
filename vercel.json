@@ -9,5 +9,15 @@
       "entrypoint": "services/api/main.py",
       "routePrefix": "/api"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/weather/cron/sync-forecasts",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/weather/cron/sync-actuals",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }
